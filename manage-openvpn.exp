@@ -1,0 +1,183 @@
+!/usr/bin/expect -f
+
+
+
+# Vérifiez que le nombre d'arguments est correct
+
+if { $argc < 1 } {
+
+    send_user "Usage: $argv0 <action> [client_name]\n"
+
+    exit 1
+
+}
+
+
+
+# Récupérez l'action et le nom du client à partir des arguments de la ligne de commande
+
+set ACTION [lindex $argv 0]
+
+set CLIENT_NAME [lindex $argv 1]
+
+
+
+# Chemin vers le script OpenVPN
+
+set script_path "./openvpn-install.sh"
+
+
+
+proc newClient {script_path client_name} {
+
+    spawn bash
+
+    send "source $script_path\n"
+
+    send "newClient\n"
+
+    
+
+    expect "Tell me a name for the client."
+
+    send "$client_name\r"
+
+    
+
+    expect {
+
+        "The name must consist of alphanumeric character." {
+
+            expect "Client name: "
+
+            send "$client_name\r"
+
+        }
+
+        "Do you want to protect the configuration file with a password?" {
+
+            send "1\r"  ; # Option 1 pour un client sans mot de passe
+
+        }
+
+    }
+
+    
+
+    interact
+
+}
+
+
+
+proc revokeClient {script_path client_name} {
+
+    spawn bash
+
+    send "source $script_path\n"
+
+    send "revokeClient\n"
+
+    
+
+    expect "Select the existing client certificate you want to revoke"
+
+    send "$client_name\r"
+    
+
+    interact
+
+}
+
+
+
+proc removeOpenVPN {script_path} {
+
+    spawn bash
+
+    send "source $script_path\n"
+
+    send "removeOpenVPN\n"
+
+    
+
+    expect "Do you really want to remove OpenVPN?"
+
+    send "y\r"
+
+    
+
+    interact
+
+}
+
+
+
+proc manageMenu {script_path} {
+
+    spawn bash
+
+    send "source $script_path\n"
+
+    send "manageMenu\n"
+
+    
+
+    interact
+
+}
+
+
+
+# Déterminer l'action à exécuter
+
+switch -- $ACTION {
+
+    "newClient" {
+
+        if { [string length $CLIENT_NAME] == 0 } {
+
+            send_user "Please provide a client name for the newClient action.\n"
+
+            exit 1
+
+        }
+
+        newClient $script_path $CLIENT_NAME
+
+    }
+
+    "revokeClient" {
+
+        if { [string length $CLIENT_NAME] == 0 } {
+
+            send_user "Please provide a client name for the revokeClient action.\n"
+
+            exit 1
+
+        }
+
+        revokeClient $script_path $CLIENT_NAME
+
+    }
+
+    "removeOpenVPN" {
+
+        removeOpenVPN $script_path
+    }
+
+    default {
+
+        manageMenu $script_path
+
+    }
+
+}
+
+
+
+
+
+
+
+    
